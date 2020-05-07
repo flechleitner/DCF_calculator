@@ -10,7 +10,7 @@ Intcal <- read_csv("input/Intcal13.csv")
 
 #Stalagmite 14C data
 #FORMATTING NOTE FOR DATA: U-Th ages in yr BP (with BP referring to 1950CE), U-Th age error as 2 sigma.
-stal_data <- read_csv("input/Candela_input.csv")
+stal_data <- read_csv("input/stal_input.csv") #Here list your stalagmite dataset
 
 
 ######Calculate atmospheric 14C values corresponding to stalagmite######
@@ -41,15 +41,17 @@ for(n in 1:dim(UThage)) {
 }
 
 #Extract the IntCal values corresponding to the ensemble of 10000 possible ages and calculate the average and STDEV.
-stats = as.data.frame(matrix(NA, nrow = 1:dim(UThage) , ncol = 3))
+stats = as.data.frame(matrix(NA, nrow = 1:dim(UThage) , ncol = 5))
 for(i in 1:dim(UThage)) {
 x_new <- x[,i]
 Intcal_new <- merge(x_new, Intcal_interp, by.x = 1, by.y = 'Date', sort = F) 
-STDEV.C14age <- sd(Intcal_new$C14.age)
+avg.Date    <- mean(Intcal_new$x)
 avg.C14Cage <- mean(Intcal_new$C14.age)
-avg.Date  <- mean(Intcal_new$x)
-stats [i,] <- c(avg.Date, avg.C14Cage, STDEV.C14age)
-colnames(stats) <- c("avg.Date", "avg.C14Cage", "STDEV.C14age")
+avg.D14C    <- mean(Intcal_new$D14C)
+STDEV.C14age <- sd(Intcal_new$C14.age)
+STDEV.D14C   <- sd(Intcal_new$D14C)
+stats [i,] <- c(avg.Date, avg.C14Cage, STDEV.C14age, avg.D14C, STDEV.D14C)
+colnames(stats) <- c("avg.Date", "avg.C14Cage", "STDEV.C14age", "avg.D14C", "STDEV.D14C")
 }
 
 
@@ -79,13 +81,17 @@ ggplot()+
 lambda <- 1/8267
 
 #First convert the atmospheric 14C age to a14C and correct the stalagmite data for decay since deposition.
-a14C_atm <- 100* exp(-stats$avg.C14Cage/8033)*exp(UThage*lambda);
-a14C_atm_sig <- sqrt((1/8033*a14C_atm * stats$STDEV.C14age^2 + (1/8267*a14C_atm * sigma)^2)) 
-a14C_stal <- 100* exp(-stal_data$C14Age/8033)*exp(UThage/8267)
-a14C_stal_sig <- sqrt((1/8033*a14C_stal * stal_data$C14AgeError)^2 + (1/8267*a14C_stal* sigma)^2)
+a14C_atm <- stats$avg.D14C/1000 + 1 
+a14C_atm_sig <- stats$STDEV.D14C/1000
 
-dcf    <- (1- a14C_stal/a14C_atm)*100;
-dcferr <- sqrt((1/a14C_atm*100*a14C_stal_sig)^2 + (a14C_stal/a14C_atm^2*100*a14C_atm_sig)^2 )
+a14C_stal <- exp(-stal_data$C14Age/8033)
+a14C_stal_sig <- a14C_stal2 * sqrt((stal_data$C14AgeError/stal_data$C14Age)^2) 
+a14C_stal_ini <- a14C_stal2 * exp(UThage*lambda)
+a14C_stal_ini_sig <- a14C_stal_ini * sqrt((a14C_stal_sig2/a14C_stal2)^2 + (sigma * lambda)^2)
+
+dcf    <- (1- a14C_stal_ini/a14C_atm2)*100;
+dcferr <- (a14C_stal_ini/a14C_atm2 * sqrt((a14C_stal_ini_sig/a14C_stal_ini)^2 + (a14C_atm_sig2/a14C_atm2)^2)) *100
+
 dcf_uc <- dcf + dcferr
 dcf_lc <- dcf - dcferr
 DCF <- data.frame(stal_data$SampleID, stal_data$UThAge, dcf, dcferr, dcf_uc, dcf_lc)
@@ -101,6 +107,6 @@ ggplot()+
   ylab('DCF (%)') 
 
 #Save output as csv file
-write.csv(DCF, file = "DCF_output.csv")
+write.csv(DCF2, file = "DCF_output.csv")
 
 
