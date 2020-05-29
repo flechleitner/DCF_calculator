@@ -10,7 +10,7 @@ Intcal <- read_csv("input/Intcal13.csv")
 
 #Stalagmite 14C data
 #FORMATTING NOTE FOR DATA: U-Th ages in yr BP (with BP referring to 1950CE), U-Th age error as 2 sigma.
-stal_data <- read_csv("input/stal_input.csv") #Here list your stalagmite dataset
+stal_data <- read_csv("input/Stalagmite_input.csv") #Here list your stalagmite dataset
 
 
 ######Calculate atmospheric 14C values corresponding to stalagmite######
@@ -85,12 +85,12 @@ a14C_atm <- stats$avg.D14C/1000 + 1
 a14C_atm_sig <- stats$STDEV.D14C/1000
 
 a14C_stal <- exp(-stal_data$C14Age/8033)
-a14C_stal_sig <- a14C_stal2 * sqrt((stal_data$C14AgeError/stal_data$C14Age)^2) 
-a14C_stal_ini <- a14C_stal2 * exp(UThage*lambda)
-a14C_stal_ini_sig <- a14C_stal_ini * sqrt((a14C_stal_sig2/a14C_stal2)^2 + (sigma * lambda)^2)
+a14C_stal_sig <- a14C_stal * sqrt((stal_data$C14AgeError/stal_data$C14Age)^2) 
+a14C_stal_ini <- a14C_stal * exp(UThage*lambda)
+a14C_stal_ini_sig <- a14C_stal_ini * sqrt((a14C_stal_sig/a14C_stal)^2 + (sigma * lambda)^2)
 
-dcf    <- (1- a14C_stal_ini/a14C_atm2)*100;
-dcferr <- (a14C_stal_ini/a14C_atm2 * sqrt((a14C_stal_ini_sig/a14C_stal_ini)^2 + (a14C_atm_sig2/a14C_atm2)^2)) *100
+dcf    <- (1- a14C_stal_ini/a14C_atm)*100;
+dcferr <- (a14C_stal_ini/a14C_atm * sqrt((a14C_stal_ini_sig/a14C_stal_ini)^2 + (a14C_atm_sig/a14C_atm)^2)) *100
 
 dcf_uc <- dcf + dcferr
 dcf_lc <- dcf - dcferr
@@ -107,6 +107,6 @@ ggplot()+
   ylab('DCF (%)') 
 
 #Save output as csv file
-write.csv(DCF2, file = "DCF_output.csv")
+write.csv(DCF, file = "DCF_output.csv")
 
 
