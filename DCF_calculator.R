@@ -6,11 +6,12 @@ library(tidyverse)
 
 ####Load input data
 #Atmospheric calibration curve (IntCal)
-Intcal <- read_csv("input/Intcal13.csv") 
+Intcal <- read_csv("input/Intcal20.csv") 
+#Intcal2 <- read_csv("input/Intcal13.csv") 
 
 #Stalagmite 14C data
 #FORMATTING NOTE FOR DATA: U-Th ages in yr BP (with BP referring to 1950CE), U-Th age error as 2 sigma.
-stal_data <- read_csv("input/Stalagmite_input.csv") #Here list your stalagmite dataset
+stal_data <- read_csv("input/Koltai_CCC_input.csv") #Here list your stalagmite dataset
 
 
 ######Calculate atmospheric 14C values corresponding to stalagmite######
@@ -23,12 +24,13 @@ stal_data <- read_csv("input/Stalagmite_input.csv") #Here list your stalagmite d
 anzahl = 10000; #Number of MC simulations (normally distributed)       
   
 #Interpolate IntCal to yearly resolution
-c14age_interp <- as.data.frame(approx(Intcal$Date, Intcal$c14age,       method = "linear", n = 50001), col.names = c("Date", "C14.age"))  
-d14C_interp   <- as.data.frame(approx(Intcal$Date, Intcal$D14C,         method = "linear", n = 50001), col.names = c("Date", "D14C"))   
-errd14C_interp<- as.data.frame(approx(Intcal$Date, Intcal$D14C.error,   method = "linear", n = 50001), col.names = c("Date", "D14C.error")) 
+c14age_interp <- as.data.frame(approx(Intcal$Date, Intcal$c14age,     0:55000,  method = "linear"), col.names = c("Date", "C14.age"))  
+d14C_interp   <- as.data.frame(approx(Intcal$Date, Intcal$D14C,       0:55000,  method = "linear"), col.names = c("Date", "D14C"))   
+errd14C_interp<- as.data.frame(approx(Intcal$Date, Intcal$D14C.error, 0:55000,  method = "linear"), col.names = c("Date", "D14C.error")) 
 Intcal_interp <- merge(c14age_interp, d14C_interp,     by = "Date")
 Intcal_interp <- merge(Intcal_interp, errd14C_interp,  by = "Date")
-  
+
+
 UThage <- as.array(stal_data$UThAge)
 sigma <-  as.array(stal_data$UThAgeError/2) #Transform U-Th error to 1 sigma
 
@@ -59,7 +61,7 @@ colnames(stats) <- c("avg.Date", "avg.C14Cage", "STDEV.C14age", "avg.D14C", "STD
 #By "reservoir age" we mean the difference between 14C age of the atmosphere and stalagmite.
 
 res_age <- as.data.frame(stal_data$C14Age - stats$avg.C14Cage)
-res_age_err <- sqrt(stal_data$C14AgeError^2 + stats$STDEV.C14age^2)
+res_age_err <- sqrt(stal_data$C14AgeError^2 + stats$STDEV.C14age^2) #This is 1sigma
 res_age_upper <- res_age + res_age_err
 res_age_lower <- res_age - res_age_err
 res.age <- data.frame(stal_data$SampleID, stal_data$UThAge, res_age, res_age_err, res_age_upper, res_age_lower)
@@ -90,7 +92,7 @@ a14C_stal_ini <- a14C_stal * exp(UThage*lambda)
 a14C_stal_ini_sig <- a14C_stal_ini * sqrt((a14C_stal_sig/a14C_stal)^2 + (sigma * lambda)^2)
 
 dcf    <- (1- a14C_stal_ini/a14C_atm)*100;
-dcferr <- (a14C_stal_ini/a14C_atm * sqrt((a14C_stal_ini_sig/a14C_stal_ini)^2 + (a14C_atm_sig/a14C_atm)^2)) *100
+dcferr <- (a14C_stal_ini/a14C_atm * sqrt((a14C_stal_ini_sig/a14C_stal_ini)^2 + (a14C_atm_sig/a14C_atm)^2)) *100 #1sigma
 
 dcf_uc <- dcf + dcferr
 dcf_lc <- dcf - dcferr
@@ -108,5 +110,5 @@ ggplot()+
 
 #Save output as csv file
 write.csv(DCF, file = "DCF_output.csv")
-
+write.csv(res.age, file = "reservoir-age_output.csv")
 
