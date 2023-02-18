@@ -7,11 +7,10 @@ library(tidyverse)
 ####Load input data
 #Atmospheric calibration curve (IntCal)
 Intcal <- read_csv("input/Intcal20.csv") 
-#Intcal2 <- read_csv("input/Intcal13.csv") 
 
 #Stalagmite 14C data
 #FORMATTING NOTE FOR DATA: U-Th ages in yr BP (with BP referring to 1950CE), U-Th age error as 2 sigma.
-stal_data <- read_csv("input/Koltai_CCC_input.csv") #Here list your stalagmite dataset
+stal_data <- read_csv("input/XXX.csv") #Here list your stalagmite dataset
 
 
 ######Calculate atmospheric 14C values corresponding to stalagmite######
